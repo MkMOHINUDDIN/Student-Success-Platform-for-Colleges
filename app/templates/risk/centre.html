@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Risk Alert Centre · Student Support{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Risk Alert Centre</h1>
+    <p class="lead">Students flagged for support — highest probability first</p>
+</div>
+
+<form class="filter-row mb-3" method="GET">
+    <div class="form-group">
+        <label for="class_id">Class</label>
+        <select id="class_id" name="class_id" class="form-control">
+            <option value="">All classes</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}" {% if request.args.class_id == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="min_prob">Min probability</label>
+        <input type="number" id="min_prob" name="min_prob" min="0" max="1" step="0.05"
+               value="{{ request.args.min_prob or '' }}" class="form-control" style="width:140px;">
+    </div>
+    <div class="form-group align-self-end">
+        <label>
+            <input type="checkbox" name="only_risk" value="1" {% if request.args.only_risk %}checked="checked"{% endif %}>
+            Show only predicted at&#8209;risk
+        </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Apply filter</button>
+    <a class="btn btn-outline" href="{{ url_for('risk.centre') }}">Clear</a>
+</form>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Risk %</th>
+                <th>Label</th>
+                <th>Top reason(s)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s, ra, expl in items %}
+            <tr>
+                <td>
+                    {{ s.first_name }} {{ s.last_name }}
+                    <small><br>{{ s.student_code }}<br><span class="muted">{{ s.class_group.name }}</span></small>
+                </td>
+                <td>
+                    {{ (ra.probability * 100)|round(1) }}%
+                    <div class="risk-meter mt-1">
+                        <div class="risk-fill" style="width:{{ (ra.probability * 100)|int }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {% if ra.predicted_label %}
+                    <span class="badge badge-danger">At risk</span>
+                    {% else %}
+                    <span class="badge badge-success">On track</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if expl and expl.get('factors') %}
+                        {% for f in expl.factors[:2] %}
+                            {% if 'increases' in f.direction %}
+                            <span class="badge badge-danger mr-1">{{ f.feature }}</span>
+                            {% else %}
+                            <span class="badge badge-info mr-1">{{ f.feature }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('students.profile', student_id=s.id) }}">Open profile</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="muted">No students match the current filters.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

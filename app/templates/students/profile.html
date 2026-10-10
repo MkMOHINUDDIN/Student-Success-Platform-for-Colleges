@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} · Student Support{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ student.first_name }} {{ student.last_name }} <small class="muted">#{{ student.student_code }}</small></h1>
+    <p class="lead">Class: {{ student.class_group.name }} &middot; Mentor: {{ student.mentor.name if student.mentor else 'Unassigned' }}</p>
+    {% if student.fictional_flag %}<span class="badge badge-secondary">Fictional synthetic record</span>{% endif %}
+</div>
+
+<div class="row mb-3">
+    <div>
+        <div class="card chart-card mb-3">
+            <h3>Academic trend</h3>
+
+            <div class="mb-2">
+                <h4 class="mb-1">Attendance %</h4>
+                <canvas id="attendanceChart" height="140"></canvas>
+            </div>
+            <div class="mb-2">
+                <h4 class="mb-1">Mean score</h4>
+                <canvas id="scoreChart" height="140"></canvas>
+            </div>
+            <div class="mb-1">
+                <h4 class="mb-1">Assignment completion %</h4>
+                <canvas id="completionChart" height="140"></canvas>
+            </div>
+        </div>
+
+        <div class="card chart-card">
+            <h3>Latest risk assessment</h3>
+            {% if risk %}
+                <p class="mb-1" style="font-size:1.6rem;font-weight:600;">
+                    {{ (risk.probability * 100)|round(1) }}%
+                    {% if risk.predicted_label %}
+                    <span class="badge badge-danger">At risk</span>
+                    {% else %}
+                    <span class="badge badge-success">On track</span>
+                    {% endif %}
+                </p>
+                <p class="muted"><small>Generated {{ risk.created_at.strftime('%Y-%m-%d') }}</small></p>
+
+                <h4 class="mt-2">Key factors</h4>
+                {% if expl and expl.get('insufficient_data') %}
+                    <p class="muted">Insufficient data for detailed factors.</p>
+                {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Factor</th>
+                            <th>Effect</th>
+                            <th>Value</th>
+                            <th>Contribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in expl.factors %}
+                        <tr>
+                            <td><code>{{ f.feature }}</code></td>
+                            <td>
+                                {% if 'increases' in f.direction %}
+                                    <span class="badge badge-danger" title="{{ f.direction }}">&uarr; increases risk</span>
+                                {% else %}
+                                    <span class="badge badge-info" title="{{ f.direction }}">&darr; decreases risk</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ f.value }}</td>
+                            <td>{{ f.signed_contribution|round(4) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <h4 class="mt-2">Recommended next steps</h4>
+                <ul>
+                    {% for r in recs %}
+                    <li>
+                        <strong>{{ r.get('title', r) }}</strong>
+                        {% if r is mapping and r.get('reason') %}
+                        &mdash; <span class="muted">{{ r.get('reason') }}</span>
+                        {% endif %}
+                    </li>
+                    {% else %}
+                    <li class="muted">No recommendations available.</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">No risk assessment yet for this student.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            {% if current_user.role in ('admin','teacher') %}
+            <h3>Create intervention</h3>
+            <form method="POST" action="">
+                {{ iform.hidden_tag() }}
+                <div class="form-group">
+                    {{ iform.category.label }}
+                    <select name="{{ iform.category.name }}" class="form-control" required>
+                        {% for value, label in iform.category.choices %}
+                        <option value="{{ value }}" {% if iform.category.data == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    {{ iform.notes.label }}
+                    <textarea name="{{ iform.notes.name }}" rows="4" class="form-control" required>{{ iform.notes.data or '' }}</textarea>
+                </div>
+                {{ iform.submit(class="btn btn-primary") }}
+            </form>
+            {% elif current_user.role == 'student' %}
+            <h3>Support plan</h3>
+            <p class="muted">Contact your teacher for intervention plans.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<section class="profile-section card" id="interventions">
+    <h3>Intervention timeline</h3>
+    {% if interventions %}
+        {% for inv in interventions %}
+        <div class="timeline-item">
+            <div class="d-flex justify-between align-center gap-2">
+                <strong>{{ inv.category|title }}</strong>
+                <span class="badge badge-secondary">{{ inv.status }}</span>
+            </div>
+            <small class="muted">by {{ inv.created_by.name }} on {{ inv.created_at.strftime('%Y-%m-%d') }}</small>
+            <p class="mb-1">{{ inv.notes }}</p>
+
+            <div class="card mb-2">
+                <div>
+                    <small>Before &middot; Attendance {{ (inv.before_attendance * 100)|round(1) if inv.before_attendance else '—' }}% &middot; Mean score {{ inv.before_mean_score|round(1) if inv.before_mean_score else '—' }}</small>
+                </div>
+                <div>
+                    <small>After &middot; Attendance {{ (inv.after_attendance * 100)|round(1) if inv.after_attendance else '—' }}% &middot; Mean score {{ inv.after_mean_score|round(1) if inv.after_mean_score else '—' }}</small>
+                </div>
+                <p class="muted mt-1 mb-0"><small>Before/after indicators are descriptive only — no causal claim.</small></p>
+            </div>
+
+            {% if inv.outcome %}
+            <span class="badge badge-info mb-1">Outcome: {{ inv.outcome }}</span>
+            {% endif %}
+
+            {% if inv.follow_ups %}
+                <h5 class="mt-2">Follow&#8209;ups</h5>
+                {% for fu in inv.follow_ups %}
+                <div class="border-left pl-3 mb-2" style="border-left:3px solid #ccc;">
+                    <p class="mb-0">{{ fu.observation }}</p>
+                    <small class="muted">{{ fu.author.name }} &middot; {{ fu.created_at.strftime('%Y-%m-%d') }}</small>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if current_user.role in ('admin','teacher') %}
+            <details class="mt-2">
+                <summary>Add follow&#8209;up</summary>
+                <form method="POST" action="{{ url_for('students.followup', student_id=student.id, iid=inv.id) }}" class="mt-2">
+                    {{ fform.hidden_tag() }}
+                    <div class="form-group">
+                        <label for="observation_{{ inv.id }}">Observation</label>
+                        <textarea id="observation_{{ inv.id }}" name="{{ fform.observation.name }}" rows="2"
+                                  class="form-control" required>{{ fform.observation.data or '' }}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="status_{{ inv.id }}">Status</label>
+                            <select id="status_{{ inv.id }}" name="{{ fform.status.name }}" class="form-control">
+                                {% for value, label in fform.status.choices %}
+                                <option value="{{ value }}" {% if fform.status.data == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="outcome_{{ inv.id }}">Outcome</label>
+                            <select id="outcome_{{ inv.id }}" name="{{ fform.outcome.name }}" class="form-control">
+                                {% for value, label in fform.outcome.choices %}
+                                <option value="{{ value }}" {% if fform.outcome.data == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-sm">Save follow&#8209;up</button>
+                </form>
+            </details>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">No interventions yet.</p>
+    {% endif %}
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var labels = {{ series | map(attribute='term') | list | tojson }};
+    var att = {{ series | map(attribute='attendance_rate') | list | tojson }}.map(function (v) { return v != null ? +(v * 100).toFixed(2) : null; });
+    var scores = {{ series | map(attribute='mean_score') | list | tojson }};
+    var comp = {{ series | map(attribute='assignment_completion') | list | tojson }}.map(function (v) { return v != null ? +(v * 100).toFixed(2) : null; });
+
+    window.drawLineChart('attendanceChart', labels, att, 'Attendance %');
+    window.drawLineChart('scoreChart', labels, scores, 'Mean score');
+    window.drawLineChart('completionChart', labels, comp, 'Assignment completion %');
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: student_risk
+    ports:
+      - "3306:3306"
+    volumes:
+      - student_risk_mysql:/var/lib/mysql
+volumes:
+  student_risk_mysql:

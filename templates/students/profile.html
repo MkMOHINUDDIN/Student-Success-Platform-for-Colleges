@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ student.first_name }} {{ student.last_name }}{% endblock %}
+{% block content %}
+<h1>{{ student.first_name }} {{ student.last_name }} <span class="muted">{{ student.student_code }} · fictional</span></h1>
+<p>{{ student.class_group.name }} · mentor {{ student.mentor.name if student.mentor else '—' }}</p>
+<div class="grid2">
+  <section class="card">
+    <h2>Term indicators</h2>
+    <canvas id="profileChart" height="160" data-points='{{ series|tojson }}'></canvas>
+    <table>
+      <thead><tr><th>Term</th><th>Attendance</th><th>Mean score</th><th>Completion</th></tr></thead>
+      <tbody>
+      {% for row in series %}
+        <tr>
+          <td>{{ row.term }}</td>
+          <td>{{ (row.attendance_rate*100)|round(0) }}%</td>
+          <td>{{ row.mean_score }}</td>
+          <td>{{ (row.assignment_completion*100)|round(0) }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>Risk estimate</h2>
+    {% if risk %}
+      <p class="pill {% if risk.predicted_label %}bad{% else %}ok{% endif %}">
+        {{ 'Predicted at risk' if risk.predicted_label else 'Not flagged' }}
+        · {{ (risk.probability*100)|round(0) }}%
+      </p>
+      {% if expl.insufficient_data %}
+        <p>Insufficient data for a reliable explanation.</p>
+      {% else %}
+        <h3>Top contributing factors</h3>
+        <ul>
+          {% for f in expl.factors %}
+          <li><strong>{{ f.feature }}</strong> = {{ f.value }} ({{ f.direction }})</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <h3>Local recommendations</h3>
+      <ul>{% for r in recs %}<li><strong>{{ r.title }}</strong> — {{ r.reason }}</li>{% endfor %}</ul>
+    {% else %}
+      <p>No model score yet.</p>
+    {% endif %}
+  </section>
+</div>
+<section class="card">
+  <h2>Goals</h2>
+  {% if student.goals %}
+    <ul>{% for g in student.goals %}<li>{{ g.title }}{% if g.target_value %} ({{ g.target_value }}){% endif %}</li>{% endfor %}</ul>
+  {% else %}<p>No goals recorded.</p>{% endif %}
+</section>
+<section class="card">
+  <h2>Intervention timeline</h2>
+  {% for item in interventions %}
+    <article class="timeline">
+      <h3>{{ item.category }} · {{ item.status }}</h3>
+      <p>{{ item.notes }}</p>
+      <p class="muted">Before: attendance {{ item.before_attendance }}, mean score {{ item.before_mean_score }}
+        {% if item.after_attendance is not none %}
+        · After: attendance {{ item.after_attendance }}, mean score {{ item.after_mean_score }}
+        {% endif %}
+      </p>
+      <p class="muted">These before/after numbers are descriptive indicators only. They do not prove the intervention caused the change.</p>
+      <ul>{% for fu in item.follow_ups %}<li>{{ fu.created_at.date() }} — {{ fu.observation }}</li>{% endfor %}</ul>
+      {% if current_user.role in ['admin','teacher'] %}
+      <form method="post" action="{{ url_for('students.followup', student_id=student.id, iid=item.id) }}">
+        {{ fform.hidden_tag() }}
+        <label>{{ fform.observation.label }} {{ fform.observation() }}</label>
+        <label>{{ fform.status.label }} {{ fform.status() }}</label>
+        <label>{{ fform.outcome.label }} {{ fform.outcome() }}</label>
+        {{ fform.submit() }}
+      </form>
+      {% endif %}
+    </article>
+  {% else %}
+    <p>No interventions yet.</p>
+  {% endfor %}
+  {% if current_user.role in ['admin','teacher'] %}
+  <h3>New intervention</h3>
+  <form method="post">
+    {{ iform.hidden_tag() }}
+    <label>{{ iform.category.label }} {{ iform.category() }}</label>
+    <label>{{ iform.notes.label }} {{ iform.notes() }}</label>
+    {{ iform.submit() }}
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

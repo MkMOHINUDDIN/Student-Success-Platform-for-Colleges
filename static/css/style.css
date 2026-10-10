@@ -1,0 +1,47 @@
+:root {
+  --bg: #f4f7fb;
+  --ink: #12263a;
+  --muted: #5b6b7c;
+  --card: #fff;
+  --line: #d7e0ea;
+  --brand: #1f6f8b;
+  --ok: #1b7f4e;
+  --bad: #b42318;
+  --warn: #8a6d00;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); line-height: 1.45; }
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: 8px; top: 8px; background: #fff; padding: 8px; }
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 20px; background: #0f3d4c; color: #fff; }
+.brand { font-weight: 700; }
+nav { display: flex; flex-wrap: wrap; gap: 12px; }
+nav a, .who { color: #e8f4f8; text-decoration: none; }
+nav a:hover, nav a:focus { text-decoration: underline; }
+.who { margin-left: auto; font-size: 0.9rem; }
+main { max-width: 1100px; margin: 0 auto; padding: 20px; }
+.notice, .flash, .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+.notice, .muted { color: var(--muted); }
+.flash.danger { border-color: var(--bad); }
+.flash.success { border-color: var(--ok); }
+.flash.warning { border-color: var(--warn); }
+.kpis, .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+h1, h2, h3 { margin-top: 0; }
+.badge { font-size: 0.7rem; background: #ffd166; color: #12263a; padding: 2px 6px; border-radius: 999px; margin-left: 8px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.85rem; }
+.pill.ok { background: #e3f6ea; color: var(--ok); }
+.pill.bad { background: #fde8e6; color: var(--bad); }
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+form label { display: block; margin: 10px 0; }
+input, select, textarea, button, .btn { font: inherit; padding: 8px 10px; }
+textarea { width: 100%; min-height: 80px; }
+button, .btn { background: var(--brand); color: #fff; border: 0; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 12px 0; }
+.narrow { max-width: 420px; }
+.pager { display: flex; gap: 12px; margin: 16px 0; }
+.timeline { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+@media (max-width: 640px) {
+  table { font-size: 0.9rem; }
+  .top { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Risk alerts{% endblock %}
+{% block content %}
+<h1>Risk alert centre</h1>
+<form class="filters" method="get">
+  <label>Class
+    <select name="class_id">
+      <option value="">All</option>
+      {% for c in classes %}
+      <option value="{{ c.id }}" {% if request.args.get('class_id')==c.id|string %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Min probability <input type="number" step="0.05" min="0" max="1" name="min_prob" value="{{ request.args.get('min_prob','') }}"></label>
+  <label><input type="checkbox" name="only_risk" value="1" {% if request.args.get('only_risk') %}checked{% endif %}> Flagged only</label>
+  <button type="submit">Filter</button>
+</form>
+<table>
+  <thead><tr><th>Student</th><th>Class</th><th>Probability</th><th>Factors</th><th></th></tr></thead>
+  <tbody>
+  {% for s, ra, expl in items %}
+    <tr>
+      <td>{{ s.first_name }} {{ s.last_name }}</td>
+      <td>{{ s.class_group.name }}</td>
+      <td><span class="pill {% if ra.predicted_label %}bad{% else %}ok{% endif %}">{{ (ra.probability*100)|round(0) }}%</span></td>
+      <td>{% for f in expl.get('factors', [])[:2] %}{{ f.feature }}{% if not loop.last %}; {% endif %}{% endfor %}</td>
+      <td><a href="{{ url_for('students.profile', student_id=s.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

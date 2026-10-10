@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Imports{% endblock %}
+{% block content %}
+<h1>CSV import</h1>
+<p>Results columns: <code>student_code,assessment_name,term,score</code>. Attendance: <code>student_code,date,status,term</code>.</p>
+<form method="post" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+  <label>{{ form.kind.label }} {{ form.kind() }}</label>
+  <label>{{ form.file.label }} {{ form.file() }}</label>
+  {{ form.submit() }}
+</form>
+<p>
+  <a href="{{ url_for('imports.export', kind='results') }}">Export results</a> ·
+  <a href="{{ url_for('imports.export', kind='attendance') }}">Export attendance</a>
+</p>
+{% if job %}
+<section class="card">
+  <h2>Preview job {{ job.id }}</h2>
+  <p>{{ job.row_count }} valid · {{ job.error_count }} errors · status {{ job.status }}</p>
+  {% if errors %}
+  <table>
+    <thead><tr><th>Row</th><th>Error</th></tr></thead>
+    <tbody>{% for num, msg in errors %}<tr><td>{{ num }}</td><td>{{ msg }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+  {% if job.row_count and job.status == 'previewed' %}
+  <form method="post" action="{{ url_for('imports.commit') }}">
+    {{ confirm.hidden_tag() }}
+    <input type="hidden" name="job_id" value="{{ job.id }}">
+    {{ confirm.submit() }}
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+<h2>Recent jobs</h2>
+<table>
+  <thead><tr><th>ID</th><th>File</th><th>Kind</th><th>Status</th><th>Valid</th><th>Errors</th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr><td>{{ j.id }}</td><td>{{ j.filename }}</td><td>{{ j.kind }}</td><td>{{ j.status }}</td><td>{{ j.row_count }}</td><td>{{ j.error_count }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

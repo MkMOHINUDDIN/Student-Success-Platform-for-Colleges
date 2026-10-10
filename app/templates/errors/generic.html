@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+<div class="card text-center" style="max-width: 560px; margin: 40px auto;">
+    <h1>Error {{ code }}</h1>
+    <p class="lead">{{ message }}</p>
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary mt-2">Back to Dashboard</a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-secondary mt-2">Back to Login</a>
+    {% endif %}
+</div>
+{% endblock %}

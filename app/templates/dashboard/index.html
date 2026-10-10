@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · Student Support{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="lead">Early indicators and at&#8209;risk students — fictional synthetic demo</p>
+</div>
+
+{% if stats.data_warnings %}
+<div class="data-warnings card mb-3">
+    <h3 class="mb-2">Data quality warnings</h3>
+    <ul>
+        {% for w in stats.data_warnings %}
+        <li>{{ w }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="kpi-grid mb-3">
+    <div class="kpi-card">
+        <div class="kpi-label">Students</div>
+        <div class="kpi-value">{{ stats.n_students }}</div>
+        <div class="kpi-trend muted">Total enrolled</div>
+    </div>
+    <div class="kpi-card">
+        <span class="badge badge-danger mb-1">At Risk</span>
+        <div class="kpi-label">Predicted At&#8209;Risk</div>
+        <div class="kpi-value">{{ stats.at_risk }}</div>
+        <div class="kpi-trend muted">Flagged by model</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Mean Score</div>
+        <div class="kpi-value">{{ stats.mean_score }}%</div>
+        <div class="kpi-trend muted">Assessment average</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Attendance</div>
+        <div class="kpi-value">{{ (stats.attendance_rate * 100)|round(1) }}%</div>
+        <div class="kpi-trend muted">Overall rate</div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="card chart-card">
+        <h3>Mean score trend</h3>
+        <canvas id="trendChart" height="220"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3>Risk by class</h3>
+        <canvas id="riskClassChart" height="220"></canvas>
+    </div>
+</div>
+
+{% if metrics %}
+<section class="card mb-3">
+    <h3>Model performance</h3>
+    <p class="muted"><small>{{ metrics.target }}</small></p>
+
+    <div class="kpi-grid mb-2">
+        <div class="kpi-card">
+            <div class="kpi-label">Accuracy</div>
+            <div class="kpi-value">{{ metrics.accuracy|round(3) }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Precision</div>
+            <div class="kpi-value">{{ metrics.precision|round(3) }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Recall</div>
+            <div class="kpi-value">{{ metrics.recall|round(3) }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">F1</div>
+            <div class="kpi-value">{{ metrics.f1|round(3) }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">ROC&#8209;AUC</div>
+            <div class="kpi-value">
+                {% if metrics.roc_auc is not none %}{{ metrics.roc_auc|round(3) }}{% else %}N/A{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <p class="muted"><small>Samples n={{ metrics.n_samples }} · train={{ metrics.n_train }} · test={{ metrics.n_test }} · Backend {{ metrics.backend }}</small></p>
+
+    <h4 class="mt-2">Confusion matrix</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Predicted Negative</th>
+                <th>Predicted Positive</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>Actual Negative</th>
+                <td>{{ metrics.confusion_matrix[0][0] }}</td>
+                <td>{{ metrics.confusion_matrix[0][1] }}</td>
+            </tr>
+            <tr>
+                <th>Actual Positive</th>
+                <td>{{ metrics.confusion_matrix[1][0] }}</td>
+                <td>{{ metrics.confusion_matrix[1][1] }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4 class="mt-2">Limitations</h4>
+    <ul>
+        {% for lim in metrics.limitations %}
+        <li>{{ lim }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var trendLabels = {{ trend | map(attribute='term') | list | tojson }};
+    var trendValues = {{ trend | map(attribute='mean') | list | tojson }};
+    window.drawLineChart('trendChart', trendLabels, trendValues, 'Mean score');
+
+    var classLabels = {{ by_class | map(attribute='class') | list | tojson }};
+    var classRisk   = {{ by_class | map(attribute='risk') | list | tojson }};
+    var classTotal  = {{ by_class | map(attribute='n') | list | tojson }};
+    window.drawStackedBar('riskClassChart', classLabels, classRisk, classTotal);
+})();
+</script>
+{% endblock %}

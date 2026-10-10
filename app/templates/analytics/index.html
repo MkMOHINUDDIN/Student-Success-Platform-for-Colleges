@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Cohort Analytics · Student Support{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Cohort Analytics</h1>
+    <p class="lead">Class/term cohort summaries and permission&#8209;safe CSV export</p>
+</div>
+
+<form class="filter-row mb-3" method="GET">
+    <div class="form-group">
+        <label for="class_id">Class</label>
+        <select id="class_id" name="class_id" class="form-control">
+            <option value="">All</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}" {% if request.args.class_id == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="term_id">Term</label>
+        <select id="term_id" name="term_id" class="form-control">
+            <option value="">Latest</option>
+            {% for t in terms %}
+            <option value="{{ t.id }}" {% if request.args.term_id == t.id|string %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a class="btn btn-outline" href="{{ url_for('analytics.index') }}">Clear</a>
+    <a class="btn btn-success ml-auto" href="{{ url_for('analytics.export') }}">⬇ Export CSV</a>
+</form>
+
+<div class="card">
+    {% if rows %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student code</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Attendance</th>
+                <th>Mean score</th>
+                <th>Assignment completion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td>{{ r.student_code }}</td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.class }}</td>
+                <td>
+                    {% if r.attendance_rate < 0.75 %}
+                    <span class="badge badge-danger">{{ (r.attendance_rate * 100)|round(1) }}%</span>
+                    {% else %}
+                    {{ (r.attendance_rate * 100)|round(1) }}%
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.mean_score < 50 %}
+                    <span class="badge badge-danger">{{ r.mean_score|round(1) }}</span>
+                    {% else %}
+                    {{ r.mean_score|round(1) }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.assignment_completion < 0.6 %}
+                    <span class="badge badge-danger">{{ (r.assignment_completion * 100)|round(1) }}%</span>
+                    {% else %}
+                    {{ (r.assignment_completion * 100)|round(1) }}%
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No cohort data.</p>
+    {% endif %}
+
+    <p class="muted mt-2 mb-0"><small>{{ rows|length }} students in this cohort view.</small></p>
+</div>
+
+{% endblock %}

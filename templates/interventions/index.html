@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Interventions{% endblock %}
+{% block content %}
+<h1>Interventions</h1>
+<table>
+  <thead><tr><th>Student</th><th>Category</th><th>Status</th><th>Before</th><th>After</th><th></th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td>{{ item.student.first_name }} {{ item.student.last_name }}</td>
+      <td>{{ item.category }}</td>
+      <td>{{ item.status }}</td>
+      <td>{{ item.before_attendance }} / {{ item.before_mean_score }}</td>
+      <td>{{ item.after_attendance or '—' }} / {{ item.after_mean_score or '—' }}</td>
+      <td><a href="{{ url_for('students.profile', student_id=item.student_id) }}">Profile</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Before/after columns are comparable indicators, not causal effect estimates.</p>
+{% endblock %}

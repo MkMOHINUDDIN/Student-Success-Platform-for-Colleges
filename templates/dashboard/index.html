@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+{% if current_user.role == 'student' %}
+<p><a class="btn" href="{{ url_for('students.profile', student_id=current_user.student.id) }}">Open my profile</a></p>
+{% endif %}
+<div class="kpis">
+  <article class="card"><h2>{{ stats.n_students }}</h2><p>Students in scope</p></article>
+  <article class="card"><h2>{{ stats.at_risk }}</h2><p>Predicted at risk</p></article>
+  <article class="card"><h2>{{ stats.mean_score }}</h2><p>Mean assessment score</p></article>
+  <article class="card"><h2>{{ (stats.attendance_rate * 100)|round(0) }}%</h2><p>Attendance rate</p></article>
+</div>
+{% if stats.data_warnings %}
+<div class="flash warning">
+  <strong>Data quality</strong>
+  <ul>{% for w in stats.data_warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+<div class="grid2">
+  <section class="card">
+    <h2>Mean score by term</h2>
+    <canvas id="trendChart" height="160" data-points='{{ trend|tojson }}'></canvas>
+  </section>
+  <section class="card">
+    <h2>Predicted risk by class</h2>
+    <canvas id="classChart" height="160" data-points='{{ by_class|tojson }}'></canvas>
+  </section>
+</div>
+{% if metrics %}
+<section class="card">
+  <h2>Active model</h2>
+  <p>Target: {{ metrics.target }}</p>
+  <p>Accuracy {{ '%.2f'|format(metrics.accuracy) }}
+     · Precision {{ '%.2f'|format(metrics.precision) }}
+     · Recall {{ '%.2f'|format(metrics.recall) }}
+     · F1 {{ '%.2f'|format(metrics.f1) }}
+     {% if metrics.roc_auc %}· ROC-AUC {{ '%.2f'|format(metrics.roc_auc) }}{% endif %}
+  </p>
+  <p class="muted">Metrics are from a held-out student split on synthetic data. They are not a guarantee of future outcomes.</p>
+</section>
+{% endif %}
+{% endblock %}

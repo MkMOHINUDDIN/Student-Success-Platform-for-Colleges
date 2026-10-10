@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Interventions · Student Support{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Interventions</h1>
+    <p class="lead">Open and closed support actions with descriptive before/after indicators</p>
+</div>
+
+<div class="card">
+    {% if items %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Outcome</th>
+                <th>Created</th>
+                <th>By</th>
+                <th>Indicators</th>
+                <th>Profile</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in items %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('students.profile', student_id=i.student_id) }}">
+                        {{ i.student.first_name }} {{ i.student.last_name }}
+                    </a>
+                    <small><br>{{ i.student.student_code }}</small>
+                </td>
+                <td>{{ i.category|title }}</td>
+                <td>
+                    {% set status_cls = 'badge-secondary' %}
+                    {% if i.status == 'in_progress' %}{% set status_cls = 'badge-info' %}{% endif %}
+                    {% if i.status == 'completed' %}{% set status_cls = 'badge-success' %}{% endif %}
+                    <span class="badge {{ status_cls }}">{{ i.status }}</span>
+                </td>
+                <td>
+                    {% if i.outcome %}
+                    <span class="badge badge-info">{{ i.outcome }}</span>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ i.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ i.created_by.name }}</td>
+                <td>
+                    <small>
+                        Before A:{{ (i.before_attendance * 100)|round(1) if i.before_attendance else '—' }}%
+                        &nbsp;S:{{ i.before_mean_score|round(1) if i.before_mean_score else '—' }}
+                    </small>
+                    <br>
+                    <small>
+                        After A:{{ (i.after_attendance * 100)|round(1) if i.after_attendance else '—' }}%
+                        &nbsp;S:{{ i.after_mean_score|round(1) if i.after_mean_score else '—' }}
+                    </small>
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-outline" href="{{ url_for('students.profile', student_id=i.student_id) }}#interventions">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No interventions yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1>Model and audit</h1>
+<section class="card">
+  <h2>Active metrics</h2>
+  {% if metrics %}
+    <ul>
+      <li>Target: {{ metrics.target }}</li>
+      <li>Samples: {{ metrics.n_samples }} (train {{ metrics.n_train }}, test {{ metrics.n_test }})</li>
+      <li>Accuracy {{ '%.3f'|format(metrics.accuracy) }} · Precision {{ '%.3f'|format(metrics.precision) }} · Recall {{ '%.3f'|format(metrics.recall) }} · F1 {{ '%.3f'|format(metrics.f1) }}</li>
+      <li>ROC-AUC: {{ metrics.roc_auc if metrics.roc_auc is not none else 'n/a' }}</li>
+      <li>Confusion matrix: {{ metrics.confusion_matrix }}</li>
+    </ul>
+    <h3>Limitations</h3>
+    <ul>{% for L in metrics.limitations %}<li>{{ L }}</li>{% endfor %}</ul>
+  {% else %}<p>No active model.</p>{% endif %}
+  <form method="post" action="{{ url_for('admin.train') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Retrain local model</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Fairness snapshot (descriptive)</h2>
+  <p>Counts by recorded gender on synthetic records. This is a coverage check, not a bias audit.</p>
+  <ul>{% for g, n in gender_counts.items() %}<li>{{ g or 'unspecified' }}: {{ n }}</li>{% endfor %}</ul>
+</section>
+<section class="card">
+  <h2>Model versions</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Trained</th><th>Active</th></tr></thead>
+    <tbody>
+    {% for v in versions %}
+      <tr><td>{{ v.name }}</td><td>{{ v.trained_at }}</td><td>{{ 'yes' if v.is_active else 'no' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section class="card">
+  <h2>Audit events</h2>
+  <table>
+    <thead><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr><td>{{ e.created_at }}</td><td>{{ e.user.email if e.user else '—' }}</td><td>{{ e.action }}</td><td>{{ e.detail }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
